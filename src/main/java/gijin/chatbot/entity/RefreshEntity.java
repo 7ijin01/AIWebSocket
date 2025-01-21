@@ -15,6 +15,10 @@ public class RefreshEntity
     private Long id;
 
     private String userId;
+    private String userName;
+    private String refresh;
+    private String expiration;
+
 
 
 }

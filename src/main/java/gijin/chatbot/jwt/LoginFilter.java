@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gijin.chatbot.dto.CustomUserDetails;
+import gijin.chatbot.entity.RefreshEntity;
+import gijin.chatbot.repository.RefreshRepository;
 import gijin.chatbot.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -30,11 +32,12 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
     private final AuthenticationManager authenticationManager;
 
     private final JWTUtil jwtUtil;
+    private final RefreshRepository refreshRepository;
 
-    public LoginFilter(AuthenticationManager authenticationManager,  JWTUtil jwtUtil) {
+    public LoginFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
         this.authenticationManager = authenticationManager;
-
         this.jwtUtil = jwtUtil;
+        this.refreshRepository = refreshRepository;
     }
 
     @Override
@@ -94,7 +97,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
         Date date = new Date(System.currentTimeMillis() + expiredMs);
 
         RefreshEntity refreshEntity = new RefreshEntity();
-        refreshEntity.setUsername(username);
+        refreshEntity.setUserName(username);
         refreshEntity.setRefresh(refresh);
         refreshEntity.setExpiration(date.toString());
 
