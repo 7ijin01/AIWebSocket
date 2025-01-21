@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim-buster
+FROM openjdk:17
 
 
 COPY build/libs/*SNAPSHOT.jar app.jar
