@@ -1,12 +1,10 @@
 package gijin.chatbot.jwt;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gijin.chatbot.dto.CustomUserDetails;
 import gijin.chatbot.entity.RefreshEntity;
 import gijin.chatbot.repository.RefreshRepository;
-import gijin.chatbot.repository.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -18,8 +16,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -107,5 +105,11 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         response.setStatus(HttpStatus.FORBIDDEN.value());
+    }
+    //로그인 경로 변경시 사용
+    @Override
+    public void setFilterProcessesUrl(String filterProcessesUrl) {
+        super.setFilterProcessesUrl(filterProcessesUrl);
+        setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(filterProcessesUrl));
     }
 }
