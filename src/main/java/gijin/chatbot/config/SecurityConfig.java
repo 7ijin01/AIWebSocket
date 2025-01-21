@@ -6,6 +6,7 @@ import gijin.chatbot.jwt.JWTUtil;
 import gijin.chatbot.jwt.LoginFilter;
 
 
+import gijin.chatbot.jwt.LogoutFilter;
 import gijin.chatbot.repository.RefreshRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,9 +65,12 @@ public class SecurityConfig {
         //JWTFilter 등록
         http
                 .addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
+        http
+                .addFilterBefore(new LogoutFilter(jwtUtil, refreshRepository), LogoutFilter.class);
                 //로그인 필터 앞에 jwtfiter 등록
         http
                 .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,refreshRepository), UsernamePasswordAuthenticationFilter.class);
+
 
         http
                 .sessionManagement((session) -> session
