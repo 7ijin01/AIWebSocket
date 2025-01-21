@@ -1,0 +1,26 @@
+services:
+  my-server:
+    build: .
+    ports:
+      - 8080:8080
+    depends_on:
+      my-db:
+        condition: service_healthy
+      my-cache-server:
+        condition: service_healthy
+
+  my-db:
+    image: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: 1234
+      MARIADB_DATABASE: chatbot
+    volumes:
+      - ./mariadb_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 5s
+      retries: 10
+
+
