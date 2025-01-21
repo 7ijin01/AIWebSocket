@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Chatbot Example</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .message {
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #DCF8C6;
+            text-align: right;
+            float: right;
+            clear: both;
+        }
+        .ai-message {
+            background-color: #EDEDED;
+            text-align: left;
+            float: left;
+            clear: both;
+        }
+        #chatArea {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
+
+</head>
+<body>
+<div class="container">
+    <h1>Chatbot Example</h1>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#chatModal">
+        Open Chat
+    </button>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatModalLabel">Chat with AI</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username"/>
+                    <button id="connectBtn" class="btn btn-secondary">Connect</button>
+                </div>
+                <br/>
+                <div id="chatArea"></div>
+                <br/>
+                <div>
+                    <textarea id="message" rows="3" cols="40"></textarea>
+                    <br/>
+                    <button id="sendBtn" class="btn btn-primary">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script type="text/javascript">
+    var stompClient = null;
+
+    function connect() {
+        var socket = new SockJS('/chat-websocket');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/messages', function(response) {
+                showMessage(JSON.parse(response.body));
+            });
+        });
+    }
+
+    function sendMessage() {
+        var messageContent = $('#message').val();
+        var username = $('#username').val();
+        var chatMessage = {
+            content: messageContent,
+            sender: username
+        };
+        stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(chatMessage));
+        $('#message').val('');
+        showUserMessage(chatMessage); // 사용자의 메시지를 바로 표시
+    }
+
+    function showMessage(message) {
+        var messageElement = $('<div class="message ai-message"></div>');
+        messageElement.text(message.sender + ': ' + message.content);
+        $('#chatArea').append(messageElement);
+        $('#chatArea').scrollTop($('#chatArea')[0].scrollHeight); // 스크롤을 아래로
+    }
+
+    function showUserMessage(message) {
+        var messageElement = $('<div class="message user-message"></div>');
+        messageElement.text(message.sender + ': ' + message.content);
+        $('#chatArea').append(messageElement);
+        $('#chatArea').scrollTop($('#chatArea')[0].scrollHeight); // 스크롤을 아래로
+    }
+
+    $(function () {
+        $('form').on('submit', function (e) {
+            e.preventDefault();
+        });
+        $('#connectBtn').click(function() {
+            connect();
+        });
+        $('#sendBtn').click(function() {
+            sendMessage();
+        });
+    });
+</script>
