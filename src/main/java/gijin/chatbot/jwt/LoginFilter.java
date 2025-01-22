@@ -1,12 +1,10 @@
 package gijin.chatbot.jwt;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gijin.chatbot.dto.CustomUserDetails;
 import gijin.chatbot.entity.RefreshEntity;
 import gijin.chatbot.repository.RefreshRepository;
-import gijin.chatbot.repository.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -18,8 +16,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -30,7 +28,6 @@ import java.util.Map;
 public class LoginFilter extends UsernamePasswordAuthenticationFilter
 {
     private final AuthenticationManager authenticationManager;
-
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
 
@@ -43,12 +40,16 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         try {
+
             ObjectMapper objectMapper=new ObjectMapper();
             Map<String, String> credentials=objectMapper.readValue(request.getInputStream(),Map.class);
-            String username=credentials.get("username");
+
+            String userId=credentials.get("userId");
+
             String password= credentials.get("password");
 
-            UsernamePasswordAuthenticationToken token=new UsernamePasswordAuthenticationToken(username,password,null);
+            UsernamePasswordAuthenticationToken token=new UsernamePasswordAuthenticationToken(userId,password,null);
+
             return authenticationManager.authenticate(token);
 
         }
@@ -97,7 +98,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
         Date date = new Date(System.currentTimeMillis() + expiredMs);
 
         RefreshEntity refreshEntity = new RefreshEntity();
-        refreshEntity.setUserName(username);
+        refreshEntity.setUsername(username);
         refreshEntity.setRefresh(refresh);
         refreshEntity.setExpiration(date.toString());
 
@@ -108,4 +109,10 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         response.setStatus(HttpStatus.FORBIDDEN.value());
     }
+    //로그인 경로 변경시 사용
+//    @Override
+//    public void setFilterProcessesUrl(String filterProcessesUrl) {
+//        super.setFilterProcessesUrl(filterProcessesUrl);
+//        setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(filterProcessesUrl));
+//    }
 }
