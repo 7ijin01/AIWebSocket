@@ -21,16 +21,7 @@ public class UserService
     public User registerUser(UserDto dto) {
         User user = new User();
         user.setUserId(dto.getUserId());
-        System.out.println(user.getUserId()+"QWEDQWDASFASFAFWEFEadf" +
-                "" +
-                "" +
-                "" +
-                "" +
-                "" +
-                "" +
-                "" +
-                "" +
-                "");
+
         user.setUsername(dto.getUsername());
         user.setPassword(bCryptPasswordEncoder.encode(dto.getPassword()));
         user.setEmail(dto.getEmail());
