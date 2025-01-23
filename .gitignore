@@ -35,5 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+maria_data*
 
 application.yml
