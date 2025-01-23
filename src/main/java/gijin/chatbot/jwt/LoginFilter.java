@@ -2,9 +2,14 @@ package gijin.chatbot.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gijin.chatbot.dto.CustomUserDetails;
+import gijin.chatbot.entity.AccessEntity;
 import gijin.chatbot.entity.RefreshEntity;
+import gijin.chatbot.entity.User;
+import gijin.chatbot.repository.AccessRepository;
 import gijin.chatbot.repository.RefreshRepository;
 
+import gijin.chatbot.repository.UserRepository;
+import gijin.chatbot.util.NetworkUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -30,11 +35,14 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
     private final AuthenticationManager authenticationManager;
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    private final AccessRepository accessRepository;
 
-    public LoginFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
+
+    public LoginFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil, RefreshRepository refreshRepository, AccessRepository accessRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
+        this.accessRepository = accessRepository;
     }
 
     @Override
@@ -44,7 +52,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
             ObjectMapper objectMapper=new ObjectMapper();
             Map<String, String> credentials=objectMapper.readValue(request.getInputStream(),Map.class);
 
-            String userId=credentials.get("userId");
+            String userId=credentials.get("userid");
 
             String password= credentials.get("password");
 
@@ -67,15 +75,24 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
         String userId = customUserDetails.getUserID();
 
 
+
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
         GrantedAuthority auth = iterator.next();
         String role = auth.getAuthority();
 
+
         //토큰 생성
         String access = jwtUtil.createJwt("Authorization", userId,username, role, 600000L);
         String refresh = jwtUtil.createJwt("Refresh",userId ,username, role, 86400000L);
-        addRefreshEntity(username, refresh, 86400000L);
+        
+        //로그인상태에서 다시 로그인 했을 때 토큰만 갱신
+        updateOrInsertAccessEntity(userId, username, NetworkUtils.getLocalIpAddress(), access, 600000L);
+        updateOrInsertRefreshEntity(userId, username, refresh, 86400000L);
+
+
+
+
 
         //응답 설정
         response.setHeader("Authorization", access);
@@ -92,16 +109,25 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter
 
         return cookie;
     }
-    private void addRefreshEntity(String username, String refresh, Long expiredMs) {
+    private void updateOrInsertAccessEntity(String userId, String username, String ip, String access, Long expiredMs) {
+        AccessEntity accessEntity = accessRepository.findByUserid(userId).orElse(new AccessEntity());
+        accessEntity.setUserid(userId);
+        accessEntity.setUsername(username);
+        accessEntity.setIp(ip);
+        accessEntity.setAccess(access);
+        accessEntity.setExpiration(new Date(System.currentTimeMillis() + expiredMs).toString());
+        accessRepository.save(accessEntity);
+    }
 
-        Date date = new Date(System.currentTimeMillis() + expiredMs);
-
-        RefreshEntity refreshEntity = new RefreshEntity();
+    private void updateOrInsertRefreshEntity(String userId, String username, String refresh, Long expiredMs) {
+        RefreshEntity refreshEntity = refreshRepository.findByUserid(userId).orElse(new RefreshEntity());
+        refreshEntity.setUserid(userId);
         refreshEntity.setUsername(username);
         refreshEntity.setRefresh(refresh);
-        refreshEntity.setExpiration(date.toString());
+        refreshEntity.setExpiration(new Date(System.currentTimeMillis() + expiredMs).toString());
         refreshRepository.save(refreshEntity);
     }
+
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {

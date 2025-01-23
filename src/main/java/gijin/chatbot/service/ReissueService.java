@@ -1,9 +1,12 @@
 package gijin.chatbot.service;
 
 
+import gijin.chatbot.entity.AccessEntity;
 import gijin.chatbot.entity.RefreshEntity;
 import gijin.chatbot.jwt.JWTUtil;
+import gijin.chatbot.repository.AccessRepository;
 import gijin.chatbot.repository.RefreshRepository;
+import gijin.chatbot.util.NetworkUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,10 +22,12 @@ public class ReissueService
 {
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    private final AccessRepository accessRepository;
 
-    public ReissueService(JWTUtil jwtUtil, RefreshRepository refreshRepository) {
+    public ReissueService(JWTUtil jwtUtil, RefreshRepository refreshRepository, AccessRepository accessRepository) {
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
+        this.accessRepository = accessRepository;
     }
 
     public ResponseEntity<?> ReissueAccessToken(HttpServletRequest request, HttpServletResponse response)
@@ -64,21 +69,33 @@ public class ReissueService
 
         String newAccess =jwtUtil.createJwt("Authorization", userId,userName,role,600000L);
         String newRefresh = jwtUtil.createJwt("Refresh",userId,userName, role, 86400000L);
-        addRefreshEntity(userName,newRefresh,86400000L);
+
+
+        updateOrInsertRefreshEntity(userId,userName,newRefresh,86400000L);
+        updateOrInsertAccessEntity(userId,userName, NetworkUtils.getLocalIpAddress(),newAccess,600000L);
+
         response.setHeader("Authorization",newAccess);
         response.addCookie(createCookie("Refresh", newRefresh));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
-    private void addRefreshEntity(String username, String refresh, Long expiredMs) {
+    private void updateOrInsertAccessEntity(String userId, String username, String ip, String access, Long expiredMs) {
+        AccessEntity accessEntity = accessRepository.findByUserid(userId).orElse(new AccessEntity());
+        accessEntity.setUserid(userId);
+        accessEntity.setUsername(username);
+        accessEntity.setIp(ip);
+        accessEntity.setAccess(access);
+        accessEntity.setExpiration(new Date(System.currentTimeMillis() + expiredMs).toString());
 
-        Date date = new Date(System.currentTimeMillis() + expiredMs);
+        accessRepository.save(accessEntity);
+    }
 
-        RefreshEntity refreshEntity = new RefreshEntity();
+    private void updateOrInsertRefreshEntity(String userId, String username, String refresh, Long expiredMs) {
+        RefreshEntity refreshEntity = refreshRepository.findByUserid(userId).orElse(new RefreshEntity());
+        refreshEntity.setUserid(userId);
         refreshEntity.setUsername(username);
         refreshEntity.setRefresh(refresh);
-        refreshEntity.setExpiration(date.toString());
-
+        refreshEntity.setExpiration(new Date(System.currentTimeMillis() + expiredMs).toString());
         refreshRepository.save(refreshEntity);
     }
 

@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 public class UserDto
 {
-    private String userId;
+    private String userid;
     private String username;
     private String password;
     private String email;

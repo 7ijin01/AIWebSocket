@@ -2,6 +2,8 @@ package gijin.chatbot.jwt;
 
 import gijin.chatbot.dto.CustomUserDetails;
 import gijin.chatbot.entity.User;
+import gijin.chatbot.repository.AccessRepository;
+import gijin.chatbot.util.NetworkUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,9 +20,11 @@ import java.io.PrintWriter;
 public class JWTFilter extends OncePerRequestFilter
 {
     private final JWTUtil jwtUtil;
+    private final AccessRepository accessRepository;
 
-    public JWTFilter(JWTUtil jwtUtil) {
+    public JWTFilter(JWTUtil jwtUtil, AccessRepository accessRepository) {
         this.jwtUtil = jwtUtil;
+        this.accessRepository = accessRepository;
     }
 
     @Override
@@ -68,9 +72,27 @@ public class JWTFilter extends OncePerRequestFilter
         String userId = jwtUtil.getUserId(accessToken);
         String username = jwtUtil.getUserName(accessToken);
         String role = jwtUtil.getRole(accessToken);
+        System.out.println(username +" "+role+" "+userId+"Asdlkajsdlashjfiondfkljdklajmd");
+
+        //요청보내는 장치의 ip 주소가 다르면 로그인 경로로 보냉ㅇ
+
+        String ip=accessRepository.findByUserid(userId).get().getIp();
+        if (!NetworkUtils.getLocalIpAddress().equals(ip)) {
+            // ip 불일치 시 응답 상태를 UNAUTHORIZED로 설정하고, 리다이렉트를 수행합니다.
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+            // 로그인 페이지로 리다이렉트
+            response.sendRedirect("/login");
+
+            return;
+        }
+
+
+
+
 
         User userEntity = new User();
-        userEntity.setUserId(userId);
+        userEntity.setUserid(userId);
         userEntity.setUsername(username);
         userEntity.setRole(role);
         CustomUserDetails customUserDetails = new CustomUserDetails(userEntity);

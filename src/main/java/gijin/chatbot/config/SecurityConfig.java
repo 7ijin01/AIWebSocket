@@ -7,7 +7,9 @@ import gijin.chatbot.jwt.JWTUtil;
 import gijin.chatbot.jwt.LoginFilter;
 
 
+import gijin.chatbot.repository.AccessRepository;
 import gijin.chatbot.repository.RefreshRepository;
+import gijin.chatbot.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,11 +34,15 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    private final AccessRepository accessRepository;
+    private final UserRepository userRepository;
 
-    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JWTUtil jwtUtil, RefreshRepository refreshRepository) {
+    public SecurityConfig(AuthenticationConfiguration authenticationConfiguration, JWTUtil jwtUtil, RefreshRepository refreshRepository, AccessRepository accessRepository, UserRepository userRepository) {
         this.authenticationConfiguration = authenticationConfiguration;
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
+        this.accessRepository = accessRepository;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -90,11 +96,11 @@ public class SecurityConfig {
 
         //JWTFilter 등록
         http
-                .addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
+                .addFilterBefore(new JWTFilter(jwtUtil,accessRepository), LoginFilter.class);
         http
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,refreshRepository), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil,refreshRepository,accessRepository), UsernamePasswordAuthenticationFilter.class);
         http
-                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), LogoutFilter.class);
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository,accessRepository), LogoutFilter.class);
 
         http
                 .sessionManagement((session) -> session

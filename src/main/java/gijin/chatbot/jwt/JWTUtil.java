@@ -30,7 +30,7 @@ public class JWTUtil
     }
     public String getUserId(String token)
     {
-        return Jwts.parser().verifyWith(secretkey).build().parseSignedClaims(token).getPayload().get("userId",String.class);
+        return Jwts.parser().verifyWith(secretkey).build().parseSignedClaims(token).getPayload().get("userid",String.class);
     }
     public String getRole(String token)
     {
@@ -44,7 +44,7 @@ public class JWTUtil
 
         return Jwts.parser().verifyWith(secretkey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
     }
-    public String createJwt(String category,String userId, String role,String userName,Long expiredMS)
+    public String createJwt(String category,String userId, String userName,String role,Long expiredMS)
     {
         return Jwts.builder()
                 .claim("category",category)

@@ -20,7 +20,7 @@ public class UserService
 
     public User registerUser(UserDto dto) {
         User user = new User();
-        user.setUserId(dto.getUserId());
+        user.setUserid(dto.getUserid());
 
         user.setUsername(dto.getUsername());
         user.setPassword(bCryptPasswordEncoder.encode(dto.getPassword()));

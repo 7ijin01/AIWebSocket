@@ -1,6 +1,7 @@
 package gijin.chatbot.jwt;
 
 
+import gijin.chatbot.repository.AccessRepository;
 import gijin.chatbot.repository.RefreshRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
@@ -18,11 +19,12 @@ public class CustomLogoutFilter extends GenericFilterBean
 {
     private final JWTUtil jwtUtil;
     private final RefreshRepository refreshRepository;
+    private final AccessRepository accessRepository;
 
-    public CustomLogoutFilter(JWTUtil jwtUtil, RefreshRepository refreshRepository) {
+    public CustomLogoutFilter(JWTUtil jwtUtil, RefreshRepository refreshRepository, AccessRepository accessRepository) {
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
-        
+        this.accessRepository = accessRepository;
     }
 
     @Override
@@ -81,7 +83,6 @@ public class CustomLogoutFilter extends GenericFilterBean
         //DB에 저장되어 있는지 확인
         Boolean isExist = refreshRepository.existsByRefresh(refresh);
         if (!isExist) {
-            System.out.println("Hello gijin2");
             //response status code
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -90,7 +91,7 @@ public class CustomLogoutFilter extends GenericFilterBean
         //로그아웃 진행
         //Refresh 토큰 DB에서 제거
         refreshRepository.deleteByRefresh(refresh);
-
+        accessRepository.deleteByUserid(jwtUtil.getUserId(refresh));
         //Refresh 토큰 Cookie 값 0
         Cookie cookie = new Cookie("Refresh", null);
         cookie.setMaxAge(0);
